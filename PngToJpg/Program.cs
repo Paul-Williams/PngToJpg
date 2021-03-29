@@ -2,14 +2,14 @@
 
 using PW.IO.FileSystemObjects;
 using System;
-using System.Drawing;
 using System.Linq;
+using System.Threading.Tasks.Dataflow;
 
 namespace PngToJpg
 {
   static class Program
   {
-    static void Main(string[] args)
+    static async System.Threading.Tasks.Task Main(string[] args)
     {
       if (args.Length == 0)
       {
@@ -25,20 +25,22 @@ namespace PngToJpg
         return;
       }
 
-      // Used to save as Jpeg of specific quality.
-      var codecInfo = ImageHelper.GetJpegCodecInfo();
+      //// Used to save as Jpeg of specific quality.
+      //var codecInfo = ImageHelper.GetJpegCodecInfo();
 
-      if (codecInfo is null)
-      {
-        Console.WriteLine("Unable to get Jpeg codec info.");
-        return;
-      }
+      //if (codecInfo is null)
+      //{
+      //  Console.WriteLine("Unable to get Jpeg codec info.");
+      //  return;
+      //}
 
-      // Quality for saved Jpegs
-      var encoderParams = ImageHelper.GetQualityEncoder(90L);
+      //// Quality for saved Jpegs
+      //var encoderParams = ImageHelper.GetQualityEncoder(90L);
 
-      // File extension to use for saved Jpegs.
+      //// File extension to use for saved Jpegs.
       var jpgExt = (FileExtension)".jpg";
+
+      var converter = new DataFlowImageConverter(90L);
 
 
       foreach (var pngFile in pngPaths.Select(x => (FilePath)x))
@@ -49,8 +51,11 @@ namespace PngToJpg
 
           if (!jpgFile.Exists)
           {
-            using var pngImg = Image.FromFile(pngFile.Value);
-            pngImg.Save(pngFile.ChangeExtension(jpgExt).Value, codecInfo, encoderParams);
+            //using var pngImg = Image.FromFile(pngFile.Value);
+            //pngImg.Save(pngFile.ChangeExtension(jpgExt).Value, codecInfo, encoderParams);
+
+            converter.Loader.Post(new(pngFile, jpgFile));
+
           }
           else Console.WriteLine("File already exists: " + jpgFile.Value);
 
@@ -59,7 +64,8 @@ namespace PngToJpg
         else Console.WriteLine("File not found: " + pngFile.Value);
 
       }
-
+      converter.Loader.Complete();
+      await converter.Saver.Completion;
 
 
     }
