@@ -40,7 +40,7 @@ namespace PngToJpg {
 
           // Convert the PNG only if a JPG with the same name does not already exist.
           if (!jpgFile.Exists) {
-            converter.Loader.Post(new(pngFilePath, jpgFile));
+            converter.Post(pngFilePath, jpgFile);
             converted.Add(pngFilePath);
           }
           else Console.WriteLine("File already exists: " + jpgFile.Value);
@@ -48,8 +48,8 @@ namespace PngToJpg {
         else Console.WriteLine("File not found: " + pngFilePath.Value);
 
       }
-      converter.Loader.Complete();
-      await converter.Saver.Completion;
+      converter.Complete();
+      await converter.Completion;
 
       // Need a command line switch for this !!
       if (converted.Count != 0) {
