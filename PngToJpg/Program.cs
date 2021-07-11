@@ -2,32 +2,26 @@
 
 using PW.IO.FileSystemObjects;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks.Dataflow;
 
-namespace PngToJpg
-{
-  static class Program
-  {
-    static async System.Threading.Tasks.Task Main(string[] args)
-    {
+namespace PngToJpg {
+  static class Program {
+    static async System.Threading.Tasks.Task Main(string[] args) {
       // One or more command line arguments are required.
-      if (args.Length == 0)
-      {
-        Console.WriteLine("Command line argument(s) missing. Requires path(s) to PNG file(s) or a path to a directory containing PNG files.");
+      if (args.Length == 0) {
+        Console.WriteLine("Command line argument(s) missing. Requires path(s) to PNG file(s), a path to a directory containing PNG files, or a path to a text file containing PNG file paths.");
         return;
       }
 
       // If there is a single command line argument, which points to a valid directory, then convert all the PNG's within that directory.
       // Otherwise get all the command line arguments that are PNG file paths.
-      var pngPaths = (args.Length == 1 && Directory.Exists(args[0]))
-        ? Directory.GetFiles(args[0], "*.png")
-        : args.Where(x => x.EndsWith(".png")).ToArray();
+      var pngFilePaths = GetFilePathsFromCommandLine(args);
 
 
-      if (pngPaths.Length == 0)
-      {
+      if (pngFilePaths.Length == 0) {
         Console.WriteLine("None of the command line arguments or the supplied path contain a PNG file path.");
         return;
       }
@@ -37,23 +31,53 @@ namespace PngToJpg
 
       var converter = new DataFlowImageConverter(90L);
 
-      foreach (var pngFile in pngPaths.Select(x => (FilePath)x))
-      {
-        if (pngFile.Exists)
-        {
+      var converted = new List<FilePath>();
+
+      foreach (var pngFilePath in pngFilePaths.ToFilePaths()) {
+        if (pngFilePath.Exists) {
           // Re-create the files full path, but with a JPG extension instead of a PNG extension.
-          var jpgFile = pngFile.ChangeExtension(jpgExt);
+          var jpgFile = pngFilePath.ChangeExtension(jpgExt);
 
           // Convert the PNG only if a JPG with the same name does not already exist.
-          if (!jpgFile.Exists) converter.Loader.Post(new(pngFile, jpgFile));
+          if (!jpgFile.Exists) {
+            converter.Loader.Post(new(pngFilePath, jpgFile));
+            converted.Add(pngFilePath);
+          }
           else Console.WriteLine("File already exists: " + jpgFile.Value);
         }
-        else Console.WriteLine("File not found: " + pngFile.Value);
+        else Console.WriteLine("File not found: " + pngFilePath.Value);
 
       }
       converter.Loader.Complete();
       await converter.Saver.Completion;
 
+      // Need a command line switch for this !!
+      if (converted.Count != 0) {
+        try {
+          converted.ForEach(FileSystem.SendToRecycleBin); // TODO: This is REALLY slow when the are lots of files.
+        }
+        catch (Exception ex) {
+
+          Console.WriteLine("Cannot delete file: " + ex.Message);
+        }
+
+      }
+      else {
+        Console.WriteLine("No files were converted.");
+      }
     }
+
+    private static string[] GetFilePathsFromCommandLine(string[] args) {
+
+      return args.Length == 1 && args[0].EndsWith(".txt", StringComparison.OrdinalIgnoreCase)
+          ? File.ReadAllLines(args[0], System.Text.Encoding.Unicode) // HACK: command line 'DIR > FILE' does not support UTF8.
+          : args.Length == 1 && Directory.Exists(args[0])
+          ? Directory.GetFiles(args[0], "*.png")
+          : args;
+    }
+
+
+    private static IEnumerable<FilePath> ToFilePaths(this IEnumerable<string> collection) => collection.Select(x => (FilePath)x);
+
   }
 }
