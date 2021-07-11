@@ -8,40 +8,18 @@ using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
 
 namespace PngToJpg {
+
   /// <summary>
   /// Converts PNG -> JPG using DataFlowBlocks. Post items to <see cref="Loader"/> then await <see cref="Saver"/>.Completion
   /// </summary>
   internal class DataFlowImageConverter : IDataflowBlock {
-    // Quality for saved Jpegs
-    private EncoderParameters EncoderParams { get; }
 
-    // Used to save as Jpeg of specific quality.
-    private static ImageCodecInfo CodecInfo { get; }
-
-    //private static DataflowLinkOptions LinkOptions { get; }
+    #region Public Constructors
 
     static DataFlowImageConverter() {
       CodecInfo = ImageHelper.GetJpegCodecInfo() ?? throw new Exception("Unable to get Jpeg codec info.");
       //LinkOptions = new DataflowLinkOptions { PropagateCompletion = true };
     }
-
-    /// <summary>
-    /// Adds a file to the conversion queue.
-    /// </summary>
-    public bool Post(FilePath inputFile, FilePath outputFile) =>
-      inputFile is null ? throw new ArgumentNullException(nameof(inputFile))
-      : outputFile is null ? throw new ArgumentNullException(nameof(outputFile))
-      : Loader.Post((inputFile, outputFile));
-
-    public void Complete() => Loader.Complete();
-
-    public void Fault(Exception exception) {
-      ((IDataflowBlock)Loader).Fault(exception);
-    }
-
-    public Task Completion => Saver.Completion;
-
-    public bool DeleteOriginal { get; set; } = true;
 
     /// <summary>
     /// Creates a new instance to convert images to JPG with the specified quality.
@@ -61,6 +39,23 @@ namespace PngToJpg {
       Loader.LinkTo(Saver, new DataflowLinkOptions { PropagateCompletion = true });
     }
 
+    #endregion Public Constructors
+
+    #region Public Properties
+
+    public Task Completion => Saver.Completion;
+
+    public bool DeleteOriginal { get; set; } = true;
+
+    #endregion Public Properties
+
+    #region Private Properties
+
+    // Used to save as Jpeg of specific quality.
+    private static ImageCodecInfo CodecInfo { get; }
+
+    // Quality for saved Jpegs
+    private EncoderParameters EncoderParams { get; }
     /// <summary>
     /// Loads images to be converted.
     /// </summary>
@@ -71,6 +66,25 @@ namespace PngToJpg {
     /// </summary>
     private ActionBlock<(FilePath InputFile, FilePath OutputFile, Image Image)> Saver { get; }
 
+    #endregion Private Properties
+
+    #region Public Methods
+
+    public void Complete() => Loader.Complete();
+
+    public void Fault(Exception exception) {
+      ((IDataflowBlock)Loader).Fault(exception);
+    }
+    
+    /// <summary>
+    /// Adds a file to the conversion queue.
+    /// </summary>
+    public bool Post(FilePath inputFile, FilePath outputFile) =>
+      inputFile is null ? throw new ArgumentNullException(nameof(inputFile))
+      : outputFile is null ? throw new ArgumentNullException(nameof(outputFile))
+      : Loader.Post((inputFile, outputFile));
+
+    #endregion Public Methods
   }
 
 }
