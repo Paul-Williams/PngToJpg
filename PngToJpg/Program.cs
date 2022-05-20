@@ -10,6 +10,11 @@ using System.Threading.Tasks.Dataflow;
 namespace PngToJpg {
   static class Program {
     static async System.Threading.Tasks.Task Main(string[] args) {
+
+#if DEBUG
+      args[0] = @"P:\ConvertToJpg.txt";
+#endif
+
       // One or more command line arguments are required.
       if (args.Length == 0) {
         Console.WriteLine("Command line argument(s) missing. Requires path(s) to PNG file(s), a path to a directory containing PNG files, or a path to a text file containing PNG file paths.");
@@ -40,6 +45,7 @@ namespace PngToJpg {
 
           // Convert the PNG only if a JPG with the same name does not already exist.
           if (!jpgFile.Exists) {
+            Console.WriteLine($"Converting: {jpgFile.Value}");
             converter.Post(pngFilePath, jpgFile);
             converted.Add(pngFilePath);
           }
@@ -70,7 +76,7 @@ namespace PngToJpg {
     private static string[] GetFilePathsFromCommandLine(string[] args) {
 
       return args.Length == 1 && args[0].EndsWith(".txt", StringComparison.OrdinalIgnoreCase)
-          ? File.ReadAllLines(args[0], System.Text.Encoding.Unicode) // HACK: command line 'DIR > FILE' does not support UTF8.
+          ? File.ReadAllLines(args[0])//, System.Text.Encoding.Unicode) // HACK: command line 'DIR > FILE' does not support UTF8.
           : args.Length == 1 && Directory.Exists(args[0])
           ? Directory.GetFiles(args[0], "*.png")
           : args;
