@@ -76,9 +76,9 @@ namespace PngToJpg {
     private static string[] GetFilePathsFromCommandLine(string[] args) {
 
       return args.Length == 1 && args[0].EndsWith(".txt", StringComparison.OrdinalIgnoreCase)
-          ? File.ReadAllLines(args[0])//, System.Text.Encoding.Unicode) // HACK: command line 'DIR > FILE' does not support UTF8.
+          ? File.ReadAllLines(args[0])
           : args.Length == 1 && Directory.Exists(args[0])
-          ? Directory.GetFiles(args[0], "*.png")
+          ? Directory.GetFiles(args[0], "*.png", new EnumerationOptions() { IgnoreInaccessible = true, RecurseSubdirectories = true })  
           : args;
     }
 
