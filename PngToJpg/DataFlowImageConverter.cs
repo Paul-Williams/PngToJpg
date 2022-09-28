@@ -28,12 +28,12 @@ namespace PngToJpg {
     public DataFlowImageConverter(long quality) {
       EncoderParams = ImageHelper.GetQualityEncoder(quality);
 
-      Loader = new(x => (x.InputFile, x.OutputFile, Image.FromFile(x.InputFile.Value)), new ExecutionDataflowBlockOptions() { MaxDegreeOfParallelism = 1 });
+      Loader = new(x => (x.InputFile, x.OutputFile, Image.FromFile(x.InputFile)), new ExecutionDataflowBlockOptions() { MaxDegreeOfParallelism = 1 });
 
       Saver = new(x => {
-        x.Image.Save(x.OutputFile.Value, CodecInfo, EncoderParams);
+        x.Image.Save(x.OutputFile, CodecInfo, EncoderParams);
         x.Image.Dispose();
-        if (DeleteOriginal) FileSystem.SendToRecycleBin(x.InputFile);
+        if (DeleteOriginal) FileSystem.Recycle(x.InputFile);
       }, new ExecutionDataflowBlockOptions() { MaxDegreeOfParallelism = 3 });
 
       Loader.LinkTo(Saver, new DataflowLinkOptions { PropagateCompletion = true });

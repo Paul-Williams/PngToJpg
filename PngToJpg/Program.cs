@@ -45,13 +45,13 @@ namespace PngToJpg {
 
           // Convert the PNG only if a JPG with the same name does not already exist.
           if (!jpgFile.Exists) {
-            Console.WriteLine($"Converting: {jpgFile.Value}");
+            Console.WriteLine($"Converting: {jpgFile}");
             converter.Post(pngFilePath, jpgFile);
             converted.Add(pngFilePath);
           }
-          else Console.WriteLine("File already exists: " + jpgFile.Value);
+          else Console.WriteLine("File already exists: " + jpgFile);
         }
-        else Console.WriteLine("File not found: " + pngFilePath.Value);
+        else Console.WriteLine("File not found: " + pngFilePath);
 
       }
       converter.Complete();
@@ -60,7 +60,7 @@ namespace PngToJpg {
       // Need a command line switch for this !!
       if (converted.Count != 0) {
         try {
-          converted.ForEach(FileSystem.SendToRecycleBin); // TODO: This is REALLY slow when the are lots of files.
+          converted.ForEach(FileSystem.Recycle); // TODO: This is REALLY slow when the are lots of files.
         }
         catch (Exception ex) {
 
