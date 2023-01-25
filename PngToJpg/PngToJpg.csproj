@@ -8,8 +8,8 @@
 
   <ItemGroup>
     <PackageReference Include="PW.Common" Version="7.0.0" />
-    <PackageReference Include="System.Drawing.Common" Version="7.0.0-rc.1.22426.10" />
-    <PackageReference Include="System.Threading.Tasks.Dataflow" Version="7.0.0-rc.1.22426.10" />
+    <PackageReference Include="System.Drawing.Common" Version="7.0.0" />
+    <PackageReference Include="System.Threading.Tasks.Dataflow" Version="7.0.0" />
   </ItemGroup>
 
 </Project>
