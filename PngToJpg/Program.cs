@@ -92,6 +92,10 @@ namespace PngToJpg {
       Console.WriteLine(entry);
     }
 
+    private static void SaveLog(string path)
+    {
+
+    }
 
   }
 }
