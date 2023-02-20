@@ -4,36 +4,62 @@ using PW.IO.FileSystemObjects;
 using System;
 using System.Drawing;
 using System.Drawing.Imaging;
+using System.Reflection.Metadata.Ecma335;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
 
-namespace PngToJpg {
+namespace PngToJpg
+{
 
   /// <summary>
   /// Converts PNG -> JPG using DataFlowBlocks. Post items to <see cref="Loader"/> then await <see cref="Saver"/>.Completion
   /// </summary>
-  internal class DataFlowImageConverter : IDataflowBlock {
+  internal class DataFlowImageConverter : IDataflowBlock
+  {
 
     #region Public Constructors
 
-    static DataFlowImageConverter() {
+    static DataFlowImageConverter()
+    {
       CodecInfo = ImageHelper.GetJpegCodecInfo() ?? throw new Exception("Unable to get Jpeg codec info.");
       //LinkOptions = new DataflowLinkOptions { PropagateCompletion = true };
+    }
+
+    private Action<string>? Log { get; }
+
+    private Image? TryLoadImage(FilePath image)
+    {
+      try
+      {
+        return Image.FromFile(image);
+      }
+      catch (Exception ex)
+      {
+        Log?.Invoke($"Error loading {image} '{ex.Message}'");
+        return null;
+      }
     }
 
     /// <summary>
     /// Creates a new instance to convert images to JPG with the specified quality.
     /// </summary>
     /// <param name="quality">Value 0 through 100</param>
-    public DataFlowImageConverter(long quality) {
+    public DataFlowImageConverter(long quality, Action<string>? log)
+    {
       EncoderParams = ImageHelper.GetQualityEncoder(quality);
+      Log = log;
 
-      Loader = new(x => (x.InputFile, x.OutputFile, Image.FromFile(x.InputFile)), new ExecutionDataflowBlockOptions() { MaxDegreeOfParallelism = 1 });
+      Loader = new(x => (x.InputFile, x.OutputFile, TryLoadImage(x.InputFile)), new ExecutionDataflowBlockOptions() { MaxDegreeOfParallelism = 1 });
 
-      Saver = new(x => {
-        x.Image.Save(x.OutputFile, CodecInfo, EncoderParams);
-        x.Image.Dispose();
-        if (DeleteOriginal) FileSystem.Recycle(x.InputFile);
+      Saver = new(x =>
+      {
+        if (x.Image is Image img)
+        {
+          img.Save(x.OutputFile, CodecInfo, EncoderParams);
+          img.Dispose();
+          if (DeleteOriginal) FileSystem.Recycle(x.InputFile);
+        }
+
       }, new ExecutionDataflowBlockOptions() { MaxDegreeOfParallelism = 3 });
 
       Loader.LinkTo(Saver, new DataflowLinkOptions { PropagateCompletion = true });
@@ -59,12 +85,12 @@ namespace PngToJpg {
     /// <summary>
     /// Loads images to be converted.
     /// </summary>
-    private TransformBlock<(FilePath InputFile, FilePath OutputFile), (FilePath InputFile, FilePath OutputFile, Image Image)> Loader { get; }
+    private TransformBlock<(FilePath InputFile, FilePath OutputFile), (FilePath InputFile, FilePath OutputFile, Image? Image)> Loader { get; }
 
     /// <summary>
     /// Converts and saves images supplied by the loader block.
     /// </summary>
-    private ActionBlock<(FilePath InputFile, FilePath OutputFile, Image Image)> Saver { get; }
+    private ActionBlock<(FilePath InputFile, FilePath OutputFile, Image? Image)> Saver { get; }
 
     #endregion Private Properties
 
@@ -72,10 +98,11 @@ namespace PngToJpg {
 
     public void Complete() => Loader.Complete();
 
-    public void Fault(Exception exception) {
+    public void Fault(Exception exception)
+    {
       ((IDataflowBlock)Loader).Fault(exception);
     }
-    
+
     /// <summary>
     /// Adds a file to the conversion queue.
     /// </summary>

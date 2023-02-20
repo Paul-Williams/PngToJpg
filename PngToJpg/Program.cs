@@ -5,19 +5,17 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection.Metadata.Ecma335;
 using System.Threading.Tasks.Dataflow;
 
 namespace PngToJpg {
   static class Program {
     static async System.Threading.Tasks.Task Main(string[] args) {
 
-#if DEBUG
-      args[0] = @"P:\ConvertToJpg.txt";
-#endif
 
       // One or more command line arguments are required.
       if (args.Length == 0) {
-        Console.WriteLine("Command line argument(s) missing. Requires path(s) to PNG file(s), a path to a directory containing PNG files, or a path to a text file containing PNG file paths.");
+        Log("Command line argument(s) missing. Requires path(s) to PNG file(s), a path to a directory containing PNG files, or a path to a text file containing PNG file paths.");
         return;
       }
 
@@ -27,14 +25,14 @@ namespace PngToJpg {
 
 
       if (pngFilePaths.Length == 0) {
-        Console.WriteLine("None of the command line arguments or the supplied path contain a PNG file path.");
+        Log("None of the command line arguments or the supplied path contain a PNG file path.");
         return;
       }
 
       // File extension to use for saved Jpegs.
       var jpgExt = (FileExtension)".jpg";
 
-      var converter = new DataFlowImageConverter(90L);
+      var converter = new DataFlowImageConverter(90L, Log);
 
       var converted = new List<FilePath>();
 
@@ -84,6 +82,16 @@ namespace PngToJpg {
 
 
     private static IEnumerable<FilePath> ToFilePaths(this IEnumerable<string> collection) => collection.Select(x => (FilePath)x);
+
+
+    private static List<string> LogEntries { get; } = new List<string>();
+
+    private static void Log (string entry)
+    {
+      LogEntries.Add(entry);
+      Console.WriteLine(entry);
+    }
+
 
   }
 }
