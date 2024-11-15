@@ -49,7 +49,7 @@ static class Program
         // Convert the PNG only if a JPG with the same name does not already exist.
         if (!jpgFile.Exists)
         {
-          Console.WriteLine($"Converting: {jpgFile}");
+          Console.WriteLine($"Queuing: {jpgFile}");
           converter.Post(pngFilePath, jpgFile);
           converted.Add(pngFilePath);
         }
