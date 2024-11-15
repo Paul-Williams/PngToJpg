@@ -61,11 +61,9 @@ internal class DataFlowImageConverter : IDataflowBlock
 
   public Task Completion => Saver.Completion;
 
-  public enum OriginalFileOption { Leave, Recycle, Delete };
+  public enum OriginalFileOption { None, Recycle, Delete };
 
-  // Default was previously recycling, but it takes an age and thus far processing has been reliable.
-  // Therefore, going forward, by default, we are just gonna delete the original, for speed.
-  public OriginalFileOption OriginalFileAction { get; set; } = OriginalFileOption.Delete;
+  public OriginalFileOption OriginalFileAction { get; set; } = OriginalFileOption.None;
 
   // Used to save as Jpeg of specific quality.
   private static ImageCodecInfo CodecInfo { get; }

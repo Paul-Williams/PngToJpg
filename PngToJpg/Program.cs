@@ -33,6 +33,12 @@ static class Program
     var converter = new DataFlowImageConverter(90L, Log);
     var converted = new List<FilePath>();
 
+    // Default was previously to recycle, but it takes an age when there ara a lot of files
+    // and thus far processing has been reliable.
+    // Therefore, going forward, we are just gonna delete the original, for speed.
+    converter.OriginalFileAction = DataFlowImageConverter.OriginalFileOption.Delete;
+
+
     foreach (var pngFilePath in pngFilePaths.ToFilePaths())
     {
       if (pngFilePath.Exists)
@@ -54,23 +60,6 @@ static class Program
     }
     converter.Complete();
     await converter.Completion;
-
-    // Need a command line switch for this !!
-    if (converted.Count != 0)
-    {
-      try
-      {
-        converted.ForEach(FileSystem.Recycle); // TODO: This is REALLY slow when the are lots of files.
-      }
-      catch (Exception ex)
-      {
-        Console.WriteLine("Cannot delete file: " + ex.Message);
-      }
-    }
-    else
-    {
-      Console.WriteLine("No files were converted.");
-    }
   }
 
   private static string[] GetFilePathsFromCommandLine(string[] args)
